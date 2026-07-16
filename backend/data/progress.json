@@ -1,0 +1,38 @@
+[
+  {
+    "userId": "a309d354-bf9e-4faf-821c-30b8a5a98998",
+    "currentRank": "D",
+    "xp": 425,
+    "level": 3,
+    "strength": 36,
+    "prs": {
+      "squat": 120,
+      "bench": 90,
+      "deadlift": 150
+    },
+    "completedQuestIds": [
+      "body-back-1",
+      "body-chest-5",
+      "body-back-2"
+    ],
+    "unlockedQuestIds": [
+      3
+    ]
+  },
+  {
+    "userId": "mock-sub-aravaswal20@gmail.com",
+    "currentRank": "E",
+    "xp": 0,
+    "level": 1,
+    "strength": 0,
+    "prs": {
+      "squat": 0,
+      "bench": 0,
+      "deadlift": 0
+    },
+    "completedQuestIds": [],
+    "unlockedQuestIds": [
+      3
+    ]
+  }
+]

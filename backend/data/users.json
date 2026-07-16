@@ -1,0 +1,50 @@
+[
+  {
+    "id": "a309d354-bf9e-4faf-821c-30b8a5a98998",
+    "name": "Jinwoo",
+    "email": "jinwoo@gmail.com",
+    "passwordHash": "$2a$10$vwBCI.Cc.yk5ZkUpPw51/OIT3vBnOESMLJfjzalxp259iGeNmBJAe",
+    "provider": "google",
+    "joinedAt": "2026-07-16T09:29:16.811Z",
+    "stats": {
+      "gender": "male",
+      "dob": "1995-05-15",
+      "height": 180,
+      "weight": 80,
+      "daysPerWeek": 4,
+      "experience": "Intermediate"
+    }
+  },
+  {
+    "id": "a3e2f147-fd69-402d-874a-9c7c60e62045",
+    "name": "Tester",
+    "email": "tester@gmail.com",
+    "passwordHash": "$2a$10$zKcoxFZbbypebWtxHNLFb.gTxFO7FWBGnMqZEh3QMU1EWLOaYvdNy",
+    "provider": "manual",
+    "joinedAt": "2026-07-16T15:09:37.725Z"
+  },
+  {
+    "id": "mock-sub-12345678",
+    "name": "Google Tester",
+    "email": "googletester@gmail.com",
+    "passwordHash": "",
+    "provider": "google",
+    "joinedAt": "2026-07-16T15:09:42.237Z"
+  },
+  {
+    "id": "mock-sub-aravaswal20@gmail.com",
+    "name": "aravaswal20",
+    "email": "aravaswal20@gmail.com",
+    "passwordHash": "",
+    "provider": "google",
+    "joinedAt": "2026-07-16T15:12:51.498Z",
+    "stats": {
+      "gender": "male",
+      "dob": "2006-08-19",
+      "height": 180,
+      "weight": 90,
+      "daysPerWeek": 4,
+      "experience": "Beginner"
+    }
+  }
+]
