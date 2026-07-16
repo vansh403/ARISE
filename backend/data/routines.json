@@ -118,5 +118,133 @@
     ],
     "moreCount": 8,
     "userId": "a309d354-bf9e-4faf-821c-30b8a5a98998"
+  },
+  {
+    "id": "r-1784216706567-h47er",
+    "name": "Back",
+    "totalSets": 14,
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 2,
+        "icon": "🏋️"
+      },
+      {
+        "name": "Lat Pulldown",
+        "sets": 3,
+        "icon": "🪑"
+      },
+      {
+        "name": "Bent Over Dumbbell Row",
+        "sets": 3,
+        "icon": "💪"
+      }
+    ],
+    "moreCount": 2,
+    "userId": "mock-sub-aravaswal20@gmail.com"
+  },
+  {
+    "id": "r-1784216706569-uduo2",
+    "name": "Chest",
+    "totalSets": 24,
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 3,
+        "icon": "🏋️"
+      },
+      {
+        "name": "Incline Dumbbell Bench Press",
+        "sets": 3,
+        "icon": "🪑"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "icon": "🤸"
+      }
+    ],
+    "moreCount": 5,
+    "userId": "mock-sub-aravaswal20@gmail.com"
+  },
+  {
+    "id": "r-1784216706574-odv1t",
+    "name": "Legs",
+    "totalSets": 14,
+    "exercises": [
+      {
+        "name": "Squat",
+        "sets": 3,
+        "icon": "🏋️"
+      },
+      {
+        "name": "Leg Extension",
+        "sets": 3,
+        "icon": "🪑"
+      },
+      {
+        "name": "Sled Leg Press",
+        "sets": 3,
+        "icon": "📐"
+      }
+    ],
+    "moreCount": 0,
+    "userId": "mock-sub-aravaswal20@gmail.com"
+  },
+  {
+    "id": "r-1784216706581-l5zh6",
+    "name": "Shoulder",
+    "totalSets": 15,
+    "exercises": [
+      {
+        "name": "Seated Dumbbell Shoulder Press",
+        "sets": 3,
+        "icon": "🏋️"
+      },
+      {
+        "name": "Seated Shoulder Press",
+        "sets": 3,
+        "icon": "🪑"
+      },
+      {
+        "name": "Barbell Front Raise",
+        "sets": 3,
+        "icon": "🧍"
+      }
+    ],
+    "moreCount": 2,
+    "userId": "mock-sub-aravaswal20@gmail.com"
+  },
+  {
+    "id": "r-1784216706586-l74om",
+    "name": "Bicep/tricep",
+    "totalSets": 33,
+    "exercises": [
+      {
+        "name": "Dumbbell Curl",
+        "sets": 3,
+        "icon": "💪"
+      },
+      {
+        "name": "Hammer Curl",
+        "sets": 3,
+        "icon": "🔨"
+      },
+      {
+        "name": "Seated Dumbbell Tricep Extension",
+        "sets": 3,
+        "icon": "🪑"
+      }
+    ],
+    "moreCount": 8,
+    "userId": "mock-sub-aravaswal20@gmail.com"
+  },
+  {
+    "id": "r-1784216888811",
+    "userId": "mock-sub-aravaswal20@gmail.com",
+    "name": "chest",
+    "totalSets": 0,
+    "exercises": [],
+    "moreCount": 0
   }
 ]

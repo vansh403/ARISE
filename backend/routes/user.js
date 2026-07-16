@@ -28,6 +28,47 @@ const calculateStrengthScore = (prs) => {
   return Math.round((squat + bench + deadlift) / 10);
 };
 
+// Helper to get local date string YYYY-MM-DD
+const getLocalDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to update user streak
+const updateUserStreak = (progress) => {
+  const currentDateStr = getLocalDateString();
+  const lastActive = progress.lastActiveDate;
+
+  if (!lastActive) {
+    progress.streak = 1;
+    progress.lastActiveDate = currentDateStr;
+    return true;
+  }
+
+  if (lastActive === currentDateStr) {
+    return false;
+  }
+
+  const current = new Date(currentDateStr);
+  const last = new Date(lastActive);
+  const diffTime = Math.abs(current - last);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) {
+    progress.streak = (progress.streak || 0) + 1;
+    progress.lastActiveDate = currentDateStr;
+    return true;
+  } else if (diffDays > 1) {
+    progress.streak = 1;
+    progress.lastActiveDate = currentDateStr;
+    return true;
+  }
+  return false;
+};
+
 // GET /api/user/progress
 router.get('/progress', auth, (req, res) => {
   try {
@@ -39,6 +80,8 @@ router.get('/progress', auth, (req, res) => {
     }
 
     let progress = db.findOne('progress', { userId });
+    let updated = false;
+
     if (!progress) {
       // Default / initial state before onboarding is completed
       progress = {
@@ -49,14 +92,52 @@ router.get('/progress', auth, (req, res) => {
         strength: 0,
         prs: { squat: 0, bench: 0, deadlift: 0 },
         completedQuestIds: [],
-        unlockedQuestIds: [3] // Default E-Rank starting quest
+        unlockedQuestIds: [3], // Default E-Rank starting quest
+        streak: 0,
+        lastActiveDate: ''
       };
+      db.insert('progress', progress);
+      updated = true;
+    } else {
+      if (progress.streak === undefined) {
+        progress.streak = 0;
+        progress.lastActiveDate = '';
+        updated = true;
+      }
+      
+      // Update streak on daily login if they have active streak history
+      if (progress.streak > 0 || progress.lastActiveDate) {
+        const currentDateStr = getLocalDateString();
+        const lastActive = progress.lastActiveDate;
+        if (lastActive !== currentDateStr) {
+          const current = new Date(currentDateStr);
+          const last = new Date(lastActive);
+          const diffTime = Math.abs(current - last);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            progress.streak += 1;
+            progress.lastActiveDate = currentDateStr;
+            updated = true;
+          } else if (diffDays > 1) {
+            progress.streak = 1;
+            progress.lastActiveDate = currentDateStr;
+            updated = true;
+          }
+        }
+      }
     }
 
     // Ensure fields exist
     if (!progress.completedQuestIds) progress.completedQuestIds = [];
     if (!progress.unlockedQuestIds) progress.unlockedQuestIds = [3];
     if (!progress.prs) progress.prs = { squat: 0, bench: 0, deadlift: 0 };
+
+    if (updated) {
+      db.update('progress', { userId }, {
+        streak: progress.streak,
+        lastActiveDate: progress.lastActiveDate
+      });
+    }
 
     return res.json({
       progress,
@@ -106,7 +187,9 @@ router.post('/onboarding', auth, (req, res) => {
       strength: initialStrength,
       prs: { squat, bench, deadlift },
       completedQuestIds: [],
-      unlockedQuestIds: [3]
+      unlockedQuestIds: [3],
+      streak: 0,
+      lastActiveDate: ''
     };
 
     const existingProgress = db.findOne('progress', { userId });
@@ -146,7 +229,9 @@ router.post('/quest/complete', auth, (req, res) => {
         strength: 0,
         prs: { squat: 0, bench: 0, deadlift: 0 },
         completedQuestIds: [],
-        unlockedQuestIds: [3]
+        unlockedQuestIds: [3],
+        streak: 0,
+        lastActiveDate: ''
       };
       db.insert('progress', progress);
     }
@@ -160,11 +245,15 @@ router.post('/quest/complete', auth, (req, res) => {
       progress.level = calculateLevel(progress.xp);
       progress.currentRank = getRankByXP(progress.xp);
       
+      updateUserStreak(progress);
+
       db.update('progress', { userId }, {
         completedQuestIds: progress.completedQuestIds,
         xp: progress.xp,
         level: progress.level,
-        currentRank: progress.currentRank
+        currentRank: progress.currentRank,
+        streak: progress.streak,
+        lastActiveDate: progress.lastActiveDate
       });
     }
 
@@ -198,7 +287,9 @@ router.post('/set/log', auth, (req, res) => {
         strength: 0,
         prs: { squat: 0, bench: 0, deadlift: 0 },
         completedQuestIds: [],
-        unlockedQuestIds: [3]
+        unlockedQuestIds: [3],
+        streak: 0,
+        lastActiveDate: ''
       };
       db.insert('progress', progress);
     }
@@ -228,10 +319,14 @@ router.post('/set/log', auth, (req, res) => {
     progress.level = calculateLevel(progress.xp);
     progress.currentRank = getRankByXP(progress.xp);
 
+    updateUserStreak(progress);
+
     const updates = {
       xp: progress.xp,
       level: progress.level,
-      currentRank: progress.currentRank
+      currentRank: progress.currentRank,
+      streak: progress.streak,
+      lastActiveDate: progress.lastActiveDate
     };
 
     if (prUpdated) {
@@ -269,7 +364,9 @@ router.post('/workout/complete', auth, (req, res) => {
         strength: 0,
         prs: { squat: 0, bench: 0, deadlift: 0 },
         completedQuestIds: [],
-        unlockedQuestIds: [3]
+        unlockedQuestIds: [3],
+        streak: 0,
+        lastActiveDate: ''
       };
       db.insert('progress', progress);
     }
@@ -278,10 +375,14 @@ router.post('/workout/complete', auth, (req, res) => {
     progress.level = calculateLevel(progress.xp);
     progress.currentRank = getRankByXP(progress.xp);
 
+    updateUserStreak(progress);
+
     db.update('progress', { userId }, {
       xp: progress.xp,
       level: progress.level,
-      currentRank: progress.currentRank
+      currentRank: progress.currentRank,
+      streak: progress.streak,
+      lastActiveDate: progress.lastActiveDate
     });
 
     return res.json(progress);

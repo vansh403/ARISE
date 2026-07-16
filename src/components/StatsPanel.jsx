@@ -101,7 +101,7 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
               <span className="font-mono text-[10px] tracking-widest">ACTIVE STREAK</span>
             </div>
             <div>
-              <span className="font-display text-4xl font-black text-slate-50 group-hover:text-red-400 transition-colors drop-shadow-lg">{HUNTER.streak}</span>
+              <span className="font-display text-4xl font-black text-slate-50 group-hover:text-red-400 transition-colors drop-shadow-lg">{progress.streak ?? 0}</span>
               <span className="text-slate-500 font-mono text-xs ml-1">DAYS</span>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
               <span className="font-mono text-[10px] tracking-widest">QUESTS CLEARED</span>
             </div>
             <div>
-              <span className="font-display text-4xl font-black text-slate-50 group-hover:text-cyan-300 transition-colors drop-shadow-lg">{HUNTER.quests}</span>
+              <span className="font-display text-4xl font-black text-slate-50 group-hover:text-cyan-300 transition-colors drop-shadow-lg">{progress.completedQuestIds?.length ?? 0}</span>
             </div>
           </div>
         </motion.div>
@@ -152,22 +152,36 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
                 <div className="h-full bg-cyan-400" style={{ width: `${Math.min(progress.strength, 100)}%` }} />
               </div>
             </div>
-            {HUNTER.stats.map((s, i) => (
-              <div key={s.name} className="group">
-                <div className="flex justify-between mb-1.5">
-                  <span className="font-mono text-[10px] text-slate-300 tracking-widest group-hover:text-cyan-300 transition-colors">{s.name.toUpperCase()}</span>
-                  <span className="font-mono text-[10px] text-slate-500 group-hover:text-cyan-300 transition-colors">{s.value}/{s.cap}</span>
+            {HUNTER.stats.map((s, i) => {
+              let val = s.value;
+              if (s.name === 'Strength') {
+                val = progress.strength || 0;
+              } else if (s.name === 'Endurance') {
+                val = Math.min(60 + (progress.completedQuestIds?.length || 0) * 2, 100);
+              } else if (s.name === 'Agility') {
+                val = Math.min(50 + (progress.completedQuestIds?.length || 0) * 2, 100);
+              } else if (s.name === 'Discipline') {
+                val = Math.min(50 + (progress.streak || 0) * 4, 100);
+              } else if (s.name === 'Recovery') {
+                val = Math.min(55 + (progress.streak || 0) * 2, 100);
+              }
+              return (
+                <div key={s.name} className="group">
+                  <div className="flex justify-between mb-1.5">
+                    <span className="font-mono text-[10px] text-slate-300 tracking-widest group-hover:text-cyan-300 transition-colors">{s.name.toUpperCase()}</span>
+                    <span className="font-mono text-[10px] text-slate-500 group-hover:text-cyan-300 transition-colors">{val}/{s.cap}</span>
+                  </div>
+                  <div className="h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(val / s.cap) * 100}%` }}
+                      transition={{ delay: 0.5 + (i * 0.1), duration: 0.8 }}
+                      className="h-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.5)]" 
+                    />
+                  </div>
                 </div>
-                <div className="h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(s.value / s.cap) * 100}%` }}
-                    transition={{ delay: 0.5 + (i * 0.1), duration: 0.8 }}
-                    className="h-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.5)]" 
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
 
