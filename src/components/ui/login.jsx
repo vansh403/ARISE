@@ -107,7 +107,10 @@ export default function Login() {
   });
 
   const handleGoogleLogin = async () => {
-    if (GOOGLE_CLIENT_ID) {
+    const isProductionClientId = GOOGLE_CLIENT_ID === '398838860964-3uuvfvr8goshhqbsqsee4df1k2fg5a9k.apps.googleusercontent.com';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (GOOGLE_CLIENT_ID && (!isLocalhost || !isProductionClientId)) {
       triggerGoogleLogin();
       return;
     }
