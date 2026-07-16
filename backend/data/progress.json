@@ -21,9 +21,9 @@
   },
   {
     "userId": "mock-sub-aravaswal20@gmail.com",
-    "currentRank": "C",
-    "xp": 675,
-    "level": 4,
+    "currentRank": "B",
+    "xp": 2088,
+    "level": 7,
     "strength": 0,
     "prs": {
       "squat": 0,
@@ -33,7 +33,11 @@
     "completedQuestIds": [
       "body-chest-1",
       "body-chest-2",
-      "body-chest-3"
+      "body-chest-3",
+      "body-chest-4",
+      "body-chest-5",
+      "body-back-1",
+      "body-back-2"
     ],
     "unlockedQuestIds": [
       3

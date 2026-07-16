@@ -7,11 +7,11 @@ const router = express.Router();
 // Helper to determine rank based on XP and completed quests
 const getRankByXP = (xp, completedQuestsCount = 0) => {
   if (completedQuestsCount < 7) return 'E';
-  if (xp >= 7000) return 'S';
-  if (xp >= 4900) return 'A';
-  if (xp >= 3150) return 'B';
-  if (xp >= 1750) return 'C';
-  if (xp >= 700) return 'D';
+  if (xp >= 12100) return 'S';
+  if (xp >= 8750) return 'A';
+  if (xp >= 5400) return 'B';
+  if (xp >= 3050) return 'C';
+  if (xp >= 1700) return 'D';
   return 'E';
 };
 
