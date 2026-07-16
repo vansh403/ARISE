@@ -107,8 +107,7 @@ export default function Login() {
   });
 
   const handleGoogleLogin = async () => {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (GOOGLE_CLIENT_ID && !isLocalhost) {
+    if (GOOGLE_CLIENT_ID) {
       triggerGoogleLogin();
       return;
     }

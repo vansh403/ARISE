@@ -119,8 +119,7 @@ export default function Awaken() {
   });
 
   const handleGoogleSignup = async () => {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (GOOGLE_CLIENT_ID && !isLocalhost) {
+    if (GOOGLE_CLIENT_ID) {
       triggerGoogleSignup();
       return;
     }

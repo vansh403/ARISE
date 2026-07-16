@@ -77,8 +77,7 @@ export default function FitnessOnboarding() {
   };
 
   const handleGoogleSignIn = () => {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (GOOGLE_CLIENT_ID && googleReady && window.google?.accounts?.id && !isLocalhost) {
+    if (GOOGLE_CLIENT_ID && googleReady && window.google?.accounts?.id) {
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: (response) => {
