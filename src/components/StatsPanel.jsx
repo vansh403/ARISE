@@ -88,7 +88,7 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
                 <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden">
                   <div className="h-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" style={{ width: `${xpPct}%` }} />
                 </div>
-                {progress.xp >= 200 && (progress.completedQuestIds?.length || 0) < 7 && (
+                {progress.xp >= 700 && (progress.completedQuestIds?.length || 0) < 7 && (
                   <div className="mt-3 text-[10px] font-mono text-amber-400 flex items-center gap-1.5 border border-amber-500/20 bg-amber-500/5 p-2 rounded">
                     <span className="animate-pulse">⚠️</span> GATE LOCKED: COMPLETE 7 QUESTS IN TOTAL TO ASCEND TO D-RANK (CURRENT: {progress.completedQuestIds?.length || 0}/7)
                   </div>

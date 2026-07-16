@@ -13,14 +13,14 @@ export const calculateStrengthScore = (prs) => {
 
 export const getRankByXP = (xp, completedQuestsCount = 0) => {
   if (completedQuestsCount < 7) {
-    return { rank: 'E', title: 'E-Class Hunter', color: '#22d3ee', nextRankXp: 200 };
+    return { rank: 'E', title: 'E-Class Hunter', color: '#22d3ee', nextRankXp: 700 };
   }
-  if (xp >= 5000) return { rank: 'S', title: 'S-Class Hunter', color: '#f59e0b', nextRankXp: null }; // Amber/Gold
-  if (xp >= 2500) return { rank: 'A', title: 'A-Class Hunter', color: '#ef4444', nextRankXp: 5000 }; // Red
-  if (xp >= 1000) return { rank: 'B', title: 'B-Class Hunter', color: '#ec4899', nextRankXp: 2500 }; // Pink
-  if (xp >= 500) return { rank: 'C', title: 'C-Class Hunter', color: '#8b5cf6', nextRankXp: 1000 }; // Purple
-  if (xp >= 200) return { rank: 'D', title: 'D-Class Hunter', color: '#3b82f6', nextRankXp: 500 }; // Blue
-  return { rank: 'E', title: 'E-Class Hunter', color: '#22d3ee', nextRankXp: 200 }; // Cyan
+  if (xp >= 7000) return { rank: 'S', title: 'S-Class Hunter', color: '#f59e0b', nextRankXp: null }; // Amber/Gold
+  if (xp >= 4900) return { rank: 'A', title: 'A-Class Hunter', color: '#ef4444', nextRankXp: 7000 }; // Red
+  if (xp >= 3150) return { rank: 'B', title: 'B-Class Hunter', color: '#ec4899', nextRankXp: 4900 }; // Pink
+  if (xp >= 1750) return { rank: 'C', title: 'C-Class Hunter', color: '#8b5cf6', nextRankXp: 3150 }; // Purple
+  if (xp >= 700) return { rank: 'D', title: 'D-Class Hunter', color: '#3b82f6', nextRankXp: 1750 }; // Blue
+  return { rank: 'E', title: 'E-Class Hunter', color: '#22d3ee', nextRankXp: 700 }; // Cyan
 };
 
 export const calculateLevel = (xp) => {

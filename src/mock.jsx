@@ -6,12 +6,12 @@ export const IMAGES = {
 };
 
 export const RANKS = [
-  { id: 'E', name: 'E-Rank', tier: 'Awakened', color: '#8a8f98', glow: '#c0c5cc', desc: 'The first step. Your dormant potential begins to stir.', reqs: '0 - 1,000 XP', unlock: 'Basic bodyweight drills' },
-  { id: 'D', name: 'D-Rank', tier: 'Novice Hunter', color: '#22d3ee', glow: '#67e8f9', desc: 'You feel the system responding. Strength incoming.', reqs: '1,000 - 5,000 XP', unlock: 'Weighted circuits, endurance runs' },
-  { id: 'C', name: 'C-Rank', tier: 'Iron Hunter', color: '#38bdf8', glow: '#7dd3fc', desc: 'Iron discipline. Your form is refined.', reqs: '5,000 - 15,000 XP', unlock: 'Compound lifts, hypertrophy blocks' },
-  { id: 'B', name: 'B-Rank', tier: 'Elite Hunter', color: '#3b82f6', glow: '#60a5fa', desc: 'The gates open. Your body reshapes itself.', reqs: '15,000 - 40,000 XP', unlock: 'Power phases, advanced conditioning' },
-  { id: 'A', name: 'A-Rank', tier: 'Ace Hunter', color: '#ef4444', glow: '#fca5a5', desc: 'Feared in the arena. Few reach here.', reqs: '40,000 - 100,000 XP', unlock: 'Elite programs, monolith protocols' },
-  { id: 'S', name: 'S-Rank', tier: 'Shadow Monarch', color: '#dc2626', glow: '#f87171', desc: 'Arise. You have become the apex.', reqs: '100,000+ XP', unlock: 'Sovereign training, unlimited access' },
+  { id: 'E', name: 'E-Rank', tier: 'Awakened', color: '#8a8f98', glow: '#c0c5cc', desc: 'The first step. Your dormant potential begins to stir.', reqs: '0 - 700 XP', unlock: 'Basic bodyweight drills' },
+  { id: 'D', name: 'D-Rank', tier: 'Novice Hunter', color: '#22d3ee', glow: '#67e8f9', desc: 'You feel the system responding. Strength incoming.', reqs: '700 - 1,750 XP', unlock: 'Weighted circuits, endurance runs' },
+  { id: 'C', name: 'C-Rank', tier: 'Iron Hunter', color: '#38bdf8', glow: '#7dd3fc', desc: 'Iron discipline. Your form is refined.', reqs: '1,750 - 3,150 XP', unlock: 'Compound lifts, hypertrophy blocks' },
+  { id: 'B', name: 'B-Rank', tier: 'Elite Hunter', color: '#3b82f6', glow: '#60a5fa', desc: 'The gates open. Your body reshapes itself.', reqs: '3,150 - 4,900 XP', unlock: 'Power phases, advanced conditioning' },
+  { id: 'A', name: 'A-Rank', tier: 'Ace Hunter', color: '#ef4444', glow: '#fca5a5', desc: 'Feared in the arena. Few reach here.', reqs: '4,900 - 7,000 XP', unlock: 'Elite programs, monolith protocols' },
+  { id: 'S', name: 'S-Rank', tier: 'Shadow Monarch', color: '#dc2626', glow: '#f87171', desc: 'Arise. You have become the apex.', reqs: '7,000+ XP', unlock: 'Sovereign training, unlimited access' },
 ];
 
 export const QUESTS = [
