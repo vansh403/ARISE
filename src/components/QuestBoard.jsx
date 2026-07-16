@@ -29,23 +29,37 @@ export const buildNutritionTargets = (stats) => {
   };
 };
 
-export const buildNutritionQuests = (targets) => [
-  { id: 'nutrition-protein', title: 'Protein Intake Quest', type: 'Nutrition', rank: 'E', xp: 90, duration: 'All day', desc: `Eat about ${targets.protein}g protein today to support recovery.` },
-  { id: 'nutrition-carbs', title: 'Carb Fuel Quest', type: 'Nutrition', rank: 'E', xp: 70, duration: 'All day', desc: `Target about ${targets.carbs}g carbs today for training energy.` },
-  { id: 'nutrition-calories', title: 'Calorie Control Quest', type: 'Nutrition', rank: 'E', xp: 80, duration: 'All day', desc: `Stay near ${targets.calories} calories today.` },
-  { id: 'nutrition-water', title: 'Hydration Gate', type: 'Hydration', rank: 'E', xp: 60, duration: 'All day', desc: `Drink about ${targets.water}L water today.` },
-];
+export const buildNutritionQuests = (targets, currentRank = 'E') => {
+  const xpMultiplier = { E: 1, D: 1.5, C: 2, B: 2.5, A: 3, S: 4 }[currentRank] || 1;
+  return [
+    { id: 'nutrition-protein', title: 'Protein Intake Quest', type: 'Nutrition', rank: currentRank, xp: Math.round(90 * xpMultiplier), duration: 'All day', desc: `Eat about ${targets.protein}g protein today to support recovery.` },
+    { id: 'nutrition-carbs', title: 'Carb Fuel Quest', type: 'Nutrition', rank: currentRank, xp: Math.round(70 * xpMultiplier), duration: 'All day', desc: `Target about ${targets.carbs}g carbs today for training energy.` },
+    { id: 'nutrition-calories', title: 'Calorie Control Quest', type: 'Nutrition', rank: currentRank, xp: Math.round(80 * xpMultiplier), duration: 'All day', desc: `Stay near ${targets.calories} calories today.` },
+    { id: 'nutrition-water', title: 'Hydration Gate', type: 'Hydration', rank: currentRank, xp: Math.round(60 * xpMultiplier), duration: 'All day', desc: `Drink about ${targets.water}L water today.` },
+  ];
+};
 
-export const buildBodyQuests = () => {
+export const buildBodyQuests = (currentRank = 'E') => {
+  const xpMultiplier = { E: 1, D: 1.5, C: 2, B: 2.5, A: 3, S: 4 }[currentRank] || 1;
+  const duration = { E: '15 min', D: '20 min', C: '25 min', B: '30 min', A: '35 min', S: '40 min' }[currentRank] || '15 min';
+  const modifier = {
+    E: 'Execute with perfect form.',
+    D: '[DIFFICULTY: D-RANK] Add 2 reps or +5kg. Limit rest to 60s.',
+    C: '[DIFFICULTY: C-RANK] Add 4 reps or +10kg. Limit rest to 45s.',
+    B: '[DIFFICULTY: B-RANK] Add 6 reps or +15kg. Focus on slow negatives (3s).',
+    A: '[DIFFICULTY: A-RANK] Add 8 reps or +20kg. Focus on explosive concentric power.',
+    S: '[DIFFICULTY: S-RANK - MONARCH] Double target load or go to absolute muscular failure.'
+  }[currentRank] || 'Execute with perfect form.';
+
   return BODY_PARTS.flatMap((part) =>
     questMoves[part].map((move, index) => ({
       id: `body-${part.toLowerCase()}-${index + 1}`,
       title: `${part} Quest ${index + 1}`,
       type: part,
-      rank: 'E',
-      xp: 100 + index * 25,
-      duration: '15 min',
-      desc: `${move}. Execute with perfect form.`,
+      rank: currentRank,
+      xp: Math.round((100 + index * 25) * xpMultiplier),
+      duration: duration,
+      desc: `${move}. ${modifier}`,
     }))
   );
 };
@@ -61,8 +75,8 @@ export default function QuestBoard({ category = 'workout', progressive = false, 
   const { toast } = useToast();
 
   const targets = buildNutritionTargets(currentUser?.stats);
-  const nutritionQuests = buildNutritionQuests(targets);
-  const workoutQuests = buildBodyQuests();
+  const nutritionQuests = buildNutritionQuests(targets, progress?.currentRank || 'E');
+  const workoutQuests = buildBodyQuests(progress?.currentRank || 'E');
 
   const questsToDisplay = category === 'workout' ? workoutQuests.slice(0, 8) : nutritionQuests; // Show first 8 workouts for demo
 

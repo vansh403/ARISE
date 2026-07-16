@@ -57,7 +57,7 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
   }, [routines]);
 
   // Take the first 8 body quests for the scroll view
-  const quests = buildBodyQuests().slice(0, 8);
+  const quests = buildBodyQuests(progress?.currentRank || 'E').slice(0, 8);
 
   const handleCompleteQuest = async (questId, xp) => {
     if (!progressive || !currentUser) {

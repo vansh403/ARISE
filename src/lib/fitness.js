@@ -11,7 +11,10 @@ export const calculateStrengthScore = (prs) => {
   return Math.round((squat + bench + deadlift) / 10);
 };
 
-export const getRankByXP = (xp) => {
+export const getRankByXP = (xp, completedQuestsCount = 0) => {
+  if (completedQuestsCount < 7) {
+    return { rank: 'E', title: 'E-Class Hunter', color: '#22d3ee', nextRankXp: 200 };
+  }
   if (xp >= 5000) return { rank: 'S', title: 'S-Class Hunter', color: '#f59e0b', nextRankXp: null }; // Amber/Gold
   if (xp >= 2500) return { rank: 'A', title: 'A-Class Hunter', color: '#ef4444', nextRankXp: 5000 }; // Red
   if (xp >= 1000) return { rank: 'B', title: 'B-Class Hunter', color: '#ec4899', nextRankXp: 2500 }; // Pink

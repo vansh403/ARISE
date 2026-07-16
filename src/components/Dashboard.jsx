@@ -85,7 +85,7 @@ export default function Dashboard() {
       case 'food-quests':
         return <NutritionDiary progressive currentUser={currentUser} progress={progress} onRefreshProgress={fetchUserProgress} />;
       case 'rank': {
-        const rankInfo = progress ? getRankByXP(progress.xp) : { rank: 'E' };
+        const rankInfo = progress ? getRankByXP(progress.xp, progress.completedQuestIds?.length || 0) : { rank: 'E' };
         return <RankSystem initialRank={rankInfo.rank} />;
       }
       case 'stats':

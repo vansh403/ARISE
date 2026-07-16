@@ -4,8 +4,9 @@ import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Helper to determine rank based on XP
-const getRankByXP = (xp) => {
+// Helper to determine rank based on XP and completed quests
+const getRankByXP = (xp, completedQuestsCount = 0) => {
+  if (completedQuestsCount < 7) return 'E';
   if (xp >= 5000) return 'S';
   if (xp >= 2500) return 'A';
   if (xp >= 1000) return 'B';
@@ -132,10 +133,17 @@ router.get('/progress', auth, (req, res) => {
     if (!progress.unlockedQuestIds) progress.unlockedQuestIds = [3];
     if (!progress.prs) progress.prs = { squat: 0, bench: 0, deadlift: 0 };
 
+    const calculatedRank = getRankByXP(progress.xp, progress.completedQuestIds?.length || 0);
+    if (progress.currentRank !== calculatedRank) {
+      progress.currentRank = calculatedRank;
+      updated = true;
+    }
+
     if (updated) {
       db.update('progress', { userId }, {
         streak: progress.streak,
-        lastActiveDate: progress.lastActiveDate
+        lastActiveDate: progress.lastActiveDate,
+        currentRank: progress.currentRank
       });
     }
 
@@ -243,7 +251,7 @@ router.post('/quest/complete', auth, (req, res) => {
       progress.completedQuestIds = Array.from(completedSet);
       progress.xp += Number(xp);
       progress.level = calculateLevel(progress.xp);
-      progress.currentRank = getRankByXP(progress.xp);
+      progress.currentRank = getRankByXP(progress.xp, progress.completedQuestIds.length);
       
       updateUserStreak(progress);
 
@@ -317,7 +325,7 @@ router.post('/set/log', auth, (req, res) => {
 
     progress.xp += xpAdded;
     progress.level = calculateLevel(progress.xp);
-    progress.currentRank = getRankByXP(progress.xp);
+    progress.currentRank = getRankByXP(progress.xp, progress.completedQuestIds?.length || 0);
 
     updateUserStreak(progress);
 
@@ -373,7 +381,7 @@ router.post('/workout/complete', auth, (req, res) => {
 
     progress.xp += 150; // Workout completion bonus XP
     progress.level = calculateLevel(progress.xp);
-    progress.currentRank = getRankByXP(progress.xp);
+    progress.currentRank = getRankByXP(progress.xp, progress.completedQuestIds?.length || 0);
 
     updateUserStreak(progress);
 
