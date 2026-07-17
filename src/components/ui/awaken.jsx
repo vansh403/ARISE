@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Eye, EyeOff, LogOut, Mail, Shield, User, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, Eye, EyeOff, LogIn, LogOut, Mail, Shield, User, Zap } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { Button } from './button';
 import { useToast } from '../../hooks/use-toast';
@@ -284,6 +284,17 @@ export default function Awaken() {
               CREATE PROFILE <Zap className="w-4 h-4" />
             </Button>
           </form>
+
+          <Button
+            asChild
+            variant="outline"
+            className="mt-4 w-full h-11 rounded-none border-cyan-400/60 text-cyan-300 hover:bg-cyan-400/10 hover:text-cyan-200 bg-transparent"
+          >
+            <Link to="/login">
+              <LogIn className="w-4 h-4" />
+              ALREADY HAVE AN ACCOUNT? LOGIN
+            </Link>
+          </Button>
 
           {currentUser && (
             <Button
