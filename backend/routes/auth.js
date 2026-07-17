@@ -33,7 +33,7 @@ router.post('/signup', async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
     
     // Check if user already exists
-    const existingUser = db.findOne('users', { email: normalizedEmail });
+    const existingUser = await db.findOne('users', { email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'A hunter profile with this email already exists.' });
     }
@@ -55,7 +55,7 @@ router.post('/signup', async (req, res) => {
       joinedAt: new Date().toISOString(),
     };
 
-    db.insert('users', newUser);
+    await db.insert('users', newUser);
 
     // Remove hash before sending user profile
     const { passwordHash: _, ...userWithoutHash } = newUser;
@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const user = db.findOne('users', { email: normalizedEmail });
+    const user = await db.findOne('users', { email: normalizedEmail });
 
     if (!user || user.provider === 'google') {
       return res.status(401).json({ error: 'Invalid Gmail address or password.' });
@@ -115,7 +115,7 @@ router.post('/google', async (req, res) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    let user = db.findOne('users', { email: normalizedEmail });
+    let user = await db.findOne('users', { email: normalizedEmail });
 
     if (!user) {
       // Create a new user automatically
@@ -127,11 +127,11 @@ router.post('/google', async (req, res) => {
         provider: 'google',
         joinedAt: new Date().toISOString(),
       };
-      db.insert('users', user);
+      await db.insert('users', user);
     } else if (user.provider !== 'google') {
       // If manual user exists, link / switch them to google provider (or just let them login with google too)
       user.provider = 'google';
-      db.update('users', { email: normalizedEmail }, { provider: 'google' });
+      await db.update('users', { email: normalizedEmail }, { provider: 'google' });
     }
 
     const { passwordHash: _, ...userWithoutHash } = user;

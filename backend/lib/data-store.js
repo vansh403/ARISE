@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { MongoClient } from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,9 +13,35 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+let isMongoConnected = false;
+let mongoClient = null;
+let mongoDb = null;
+let isConnecting = false;
+
 class DataStore {
-  constructor() {
-    this.locks = {};
+  async _ensureConnected() {
+    if (isMongoConnected) return;
+    if (isConnecting) {
+      // Wait a brief moment if another query triggered connection
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return;
+    }
+    const uri = process.env.MONGODB_URI;
+    if (uri && !mongoDb) {
+      isConnecting = true;
+      try {
+        mongoClient = await MongoClient.connect(uri);
+        mongoDb = mongoClient.db();
+        isMongoConnected = true;
+        console.log('========================================');
+        console.log('   CONNECTED SUCCESSFULLY TO MONGODB');
+        console.log('========================================');
+      } catch (err) {
+        console.error('MongoDB connection failed. Falling back to local JSON store.', err);
+      } finally {
+        isConnecting = false;
+      }
+    }
   }
 
   _getFilePath(table) {
@@ -47,7 +74,15 @@ class DataStore {
   }
 
   // Find multiple records matching query criteria
-  find(table, query = {}) {
+  async find(table, query = {}) {
+    await this._ensureConnected();
+    if (isMongoConnected) {
+      try {
+        return await mongoDb.collection(table).find(query).toArray();
+      } catch (err) {
+        console.error(`MongoDB find error on table "${table}":`, err);
+      }
+    }
     const records = this._readTable(table);
     return records.filter((rec) => {
       for (const key in query) {
@@ -58,7 +93,15 @@ class DataStore {
   }
 
   // Find single record matching query criteria
-  findOne(table, query = {}) {
+  async findOne(table, query = {}) {
+    await this._ensureConnected();
+    if (isMongoConnected) {
+      try {
+        return await mongoDb.collection(table).findOne(query);
+      } catch (err) {
+        console.error(`MongoDB findOne error on table "${table}":`, err);
+      }
+    }
     const records = this._readTable(table);
     return records.find((rec) => {
       for (const key in query) {
@@ -69,7 +112,17 @@ class DataStore {
   }
 
   // Insert a record into a table
-  insert(table, data) {
+  async insert(table, data) {
+    await this._ensureConnected();
+    if (isMongoConnected) {
+      try {
+        const doc = { ...data };
+        await mongoDb.collection(table).insertOne(doc);
+        return doc;
+      } catch (err) {
+        console.error(`MongoDB insert error on table "${table}":`, err);
+      }
+    }
     const records = this._readTable(table);
     const newRecord = { ...data };
     records.push(newRecord);
@@ -78,7 +131,16 @@ class DataStore {
   }
 
   // Update records matching a query or direct match
-  update(table, query, updates) {
+  async update(table, query, updates) {
+    await this._ensureConnected();
+    if (isMongoConnected) {
+      try {
+        const result = await mongoDb.collection(table).updateMany(query, { $set: updates });
+        return result.modifiedCount;
+      } catch (err) {
+        console.error(`MongoDB update error on table "${table}":`, err);
+      }
+    }
     const records = this._readTable(table);
     let updatedCount = 0;
     
@@ -104,7 +166,16 @@ class DataStore {
   }
 
   // Delete records matching a query
-  delete(table, query) {
+  async delete(table, query) {
+    await this._ensureConnected();
+    if (isMongoConnected) {
+      try {
+        const result = await mongoDb.collection(table).deleteMany(query);
+        return result.deletedCount;
+      } catch (err) {
+        console.error(`MongoDB delete error on table "${table}":`, err);
+      }
+    }
     const records = this._readTable(table);
     const initialLength = records.length;
     const remainingRecords = records.filter((rec) => {
@@ -127,3 +198,6 @@ class DataStore {
 }
 
 export const db = new DataStore();
+
+// Schedule initial lazy connection attempt on next event tick after dotenv loads
+setTimeout(() => db._ensureConnected(), 0);

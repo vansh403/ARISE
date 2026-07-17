@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, MoreVertical, Check, ArrowRight, X, Clock, Settings, HelpCircle, Activity, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, MoreVertical, Check, ArrowRight, X, Clock, Settings, HelpCircle, Activity, Plus, Search } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { apiClient } from '../lib/api';
 import { Button } from './ui/button';
@@ -9,6 +9,75 @@ export default function WorkoutTracker({ routine, onClose, currentUser }) {
   const { toast } = useToast();
   const [elapsed, setElapsed] = useState(0);
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
+
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
+  const [exerciseQuery, setExerciseQuery] = useState('');
+  const [exerciseMuscle, setExerciseMuscle] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!exerciseQuery.trim() && !exerciseMuscle) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const data = await apiClient.searchExercises(exerciseQuery, exerciseMuscle);
+        setSearchResults(data);
+      } catch (e) {
+        console.error('Failed to search exercises', e);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [exerciseQuery, exerciseMuscle]);
+
+  const handleSelectExercise = async (exercise) => {
+    const newEx = {
+      id: `ex-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      name: exercise.name,
+      icon: '🏋️',
+      expanded: true,
+      sets: [
+        {
+          id: `set-${Date.now()}-0`,
+          setNum: 1,
+          prev: '-',
+          lbs: '',
+          reps: '',
+          completed: false
+        }
+      ]
+    };
+    
+    // We will append to current workoutData
+    setWorkoutData(prev => {
+      const updated = [...prev, newEx];
+      // Persist to routine if it's a saved routine
+      if (currentUser && routine.id && routine.id.toString().startsWith('r-')) {
+        const savedExercises = updated.map(ex => ({
+          name: ex.name,
+          sets: ex.sets.length,
+          icon: ex.icon || '🏋️'
+        }));
+        apiClient.updateRoutine(routine.id, { exercises: savedExercises }).catch(e => {
+          console.error('Failed to persist exercise to routine', e);
+        });
+      }
+      return updated;
+    });
+
+    setShowAddExerciseModal(false);
+    setExerciseQuery('');
+    setExerciseMuscle('');
+    toast({
+      title: '[SYSTEM]',
+      description: `Added ${exercise.name} to active workout.`
+    });
+  };
 
   // Initialize workout data based on the passed routine
   const [workoutData, setWorkoutData] = useState(() => {
@@ -284,7 +353,10 @@ export default function WorkoutTracker({ routine, onClose, currentUser }) {
 
           {/* Add Exercise Button */}
           <div className="pt-4 pb-4">
-            <button className="w-full h-14 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-display font-bold text-lg flex items-center justify-center gap-2 transition-colors">
+            <button 
+              onClick={() => setShowAddExerciseModal(true)}
+              className="w-full h-14 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-display font-bold text-lg flex items-center justify-center gap-2 transition-colors"
+            >
               <Plus className="w-5 h-5" /> Exercise
             </button>
           </div>
@@ -315,6 +387,81 @@ export default function WorkoutTracker({ routine, onClose, currentUser }) {
         </button>
       </div>
 
+      <AnimatePresence>
+        {showAddExerciseModal && (
+          <motion.div 
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col"
+          >
+            <div className="p-4 border-b border-slate-800 flex items-center gap-4 bg-slate-950">
+              <button onClick={() => setShowAddExerciseModal(false)} className="text-slate-400 hover:text-white">
+                <X size={24} />
+              </button>
+              <h2 className="font-display font-bold text-xl text-white flex-1">Add Exercise to Workout</h2>
+            </div>
+            
+            <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex flex-col gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
+                <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Search exercise by name..." 
+                  value={exerciseQuery}
+                  onChange={(e) => setExerciseQuery(e.target.value)}
+                  className="w-full h-12 bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Muscle group select filters */}
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {['abdominals', 'biceps', 'calves', 'chest', 'forearms', 'glutes', 'hamstrings', 'lats', 'quadriceps', 'triceps'].map(muscle => (
+                  <button
+                    key={muscle}
+                    onClick={() => setExerciseMuscle(prev => prev === muscle ? '' : muscle)}
+                    className={`px-3 py-1 text-xs font-mono border transition-all whitespace-nowrap ${exerciseMuscle === muscle ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                  >
+                    {muscle.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <div className="font-mono text-[10px] text-cyan-400 tracking-widest uppercase mb-4 mt-2">// SYSTEM DATABASE</div>
+              
+              <div className="space-y-2">
+                {searching ? (
+                  <div className="text-center py-12 text-slate-500 font-mono text-sm animate-pulse">// ACCESSING ARCHIVES...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(ex => (
+                    <div 
+                      key={ex.name} 
+                      onClick={() => handleSelectExercise(ex)}
+                      className="p-4 border border-slate-800 bg-slate-900/50 rounded-lg cursor-pointer hover:border-cyan-500/50 hover:bg-slate-900 transition-all flex justify-between items-center group"
+                    >
+                      <div>
+                        <div className="font-display text-white group-hover:text-cyan-300 transition-colors capitalize">{ex.name}</div>
+                        <div className="font-mono text-xs text-slate-500 capitalize">{ex.muscle} · {ex.difficulty}</div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-black transition-colors">
+                        <Plus size={16} />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="font-display text-slate-500 text-lg mb-2">No exercises found</div>
+                    <div className="font-mono text-xs text-slate-600">Type a name or choose a muscle group filter above.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

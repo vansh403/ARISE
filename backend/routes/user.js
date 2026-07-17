@@ -71,16 +71,16 @@ const updateUserStreak = (progress) => {
 };
 
 // GET /api/user/progress
-router.get('/progress', auth, (req, res) => {
+router.get('/progress', auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = db.findOne('users', { id: userId });
+    const user = await db.findOne('users', { id: userId });
     
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    let progress = db.findOne('progress', { userId });
+    let progress = await db.findOne('progress', { userId });
     let updated = false;
 
     if (!progress) {
@@ -97,7 +97,7 @@ router.get('/progress', auth, (req, res) => {
         streak: 0,
         lastActiveDate: ''
       };
-      db.insert('progress', progress);
+      await db.insert('progress', progress);
       updated = true;
     } else {
       if (progress.streak === undefined) {
@@ -106,8 +106,8 @@ router.get('/progress', auth, (req, res) => {
         updated = true;
       }
       
-      // Update streak on daily login if they have active streak history
-      if (progress.streak > 0 || progress.lastActiveDate) {
+      // Reset streak if pattern is broken (last active date was before yesterday)
+      if (progress.lastActiveDate) {
         const currentDateStr = getLocalDateString();
         const lastActive = progress.lastActiveDate;
         if (lastActive !== currentDateStr) {
@@ -115,13 +115,8 @@ router.get('/progress', auth, (req, res) => {
           const last = new Date(lastActive);
           const diffTime = Math.abs(current - last);
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays === 1) {
-            progress.streak += 1;
-            progress.lastActiveDate = currentDateStr;
-            updated = true;
-          } else if (diffDays > 1) {
-            progress.streak = 1;
-            progress.lastActiveDate = currentDateStr;
+          if (diffDays > 1) {
+            progress.streak = 0;
             updated = true;
           }
         }
@@ -140,7 +135,7 @@ router.get('/progress', auth, (req, res) => {
     }
 
     if (updated) {
-      db.update('progress', { userId }, {
+      await db.update('progress', { userId }, {
         streak: progress.streak,
         lastActiveDate: progress.lastActiveDate,
         currentRank: progress.currentRank
@@ -158,12 +153,12 @@ router.get('/progress', auth, (req, res) => {
 });
 
 // POST /api/user/onboarding
-router.post('/onboarding', auth, (req, res) => {
+router.post('/onboarding', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { gender, dob, height, weight, daysPerWeek, experience, prs } = req.body;
 
-    const user = db.findOne('users', { id: userId });
+    const user = await db.findOne('users', { id: userId });
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
@@ -178,7 +173,7 @@ router.post('/onboarding', auth, (req, res) => {
       experience
     };
 
-    db.update('users', { id: userId }, { stats });
+    await db.update('users', { id: userId }, { stats });
 
     // Initialize/reset progress based on onboarding PRs
     const squat = parseFloat(prs?.squat) || 0;
@@ -200,11 +195,11 @@ router.post('/onboarding', auth, (req, res) => {
       lastActiveDate: ''
     };
 
-    const existingProgress = db.findOne('progress', { userId });
+    const existingProgress = await db.findOne('progress', { userId });
     if (existingProgress) {
-      db.update('progress', { userId }, initialProgress);
+      await db.update('progress', { userId }, initialProgress);
     } else {
-      db.insert('progress', initialProgress);
+      await db.insert('progress', initialProgress);
     }
 
     return res.json({
@@ -218,7 +213,7 @@ router.post('/onboarding', auth, (req, res) => {
 });
 
 // POST /api/user/quest/complete
-router.post('/quest/complete', auth, (req, res) => {
+router.post('/quest/complete', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { questId, xp } = req.body;
@@ -227,7 +222,7 @@ router.post('/quest/complete', auth, (req, res) => {
       return res.status(400).json({ error: 'Quest ID and XP amount are required.' });
     }
 
-    let progress = db.findOne('progress', { userId });
+    let progress = await db.findOne('progress', { userId });
     if (!progress) {
       progress = {
         userId,
@@ -241,7 +236,7 @@ router.post('/quest/complete', auth, (req, res) => {
         streak: 0,
         lastActiveDate: ''
       };
-      db.insert('progress', progress);
+      await db.insert('progress', progress);
     }
 
     // Prevent duplicates
@@ -255,7 +250,7 @@ router.post('/quest/complete', auth, (req, res) => {
       
       updateUserStreak(progress);
 
-      db.update('progress', { userId }, {
+      await db.update('progress', { userId }, {
         completedQuestIds: progress.completedQuestIds,
         xp: progress.xp,
         level: progress.level,
@@ -273,7 +268,7 @@ router.post('/quest/complete', auth, (req, res) => {
 });
 
 // POST /api/user/set/log
-router.post('/set/log', auth, (req, res) => {
+router.post('/set/log', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { exerciseName, weight: rawWeight, reps: rawReps } = req.body;
@@ -285,7 +280,7 @@ router.post('/set/log', auth, (req, res) => {
     const weight = parseFloat(rawWeight) || 0;
     const reps = parseInt(rawReps) || 0;
 
-    let progress = db.findOne('progress', { userId });
+    let progress = await db.findOne('progress', { userId });
     if (!progress) {
       progress = {
         userId,
@@ -299,7 +294,7 @@ router.post('/set/log', auth, (req, res) => {
         streak: 0,
         lastActiveDate: ''
       };
-      db.insert('progress', progress);
+      await db.insert('progress', progress);
     }
 
     let prs = { ...progress.prs };
@@ -344,7 +339,7 @@ router.post('/set/log', auth, (req, res) => {
       updates.strength = progress.strength;
     }
 
-    db.update('progress', { userId }, updates);
+    await db.update('progress', { userId }, updates);
 
     return res.json({
       progress,
@@ -358,10 +353,10 @@ router.post('/set/log', auth, (req, res) => {
 });
 
 // POST /api/user/workout/complete
-router.post('/workout/complete', auth, (req, res) => {
+router.post('/workout/complete', auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    let progress = db.findOne('progress', { userId });
+    let progress = await db.findOne('progress', { userId });
 
     if (!progress) {
       progress = {
@@ -376,7 +371,7 @@ router.post('/workout/complete', auth, (req, res) => {
         streak: 0,
         lastActiveDate: ''
       };
-      db.insert('progress', progress);
+      await db.insert('progress', progress);
     }
 
     progress.xp += 150; // Workout completion bonus XP
@@ -385,7 +380,7 @@ router.post('/workout/complete', auth, (req, res) => {
 
     updateUserStreak(progress);
 
-    db.update('progress', { userId }, {
+    await db.update('progress', { userId }, {
       xp: progress.xp,
       level: progress.level,
       currentRank: progress.currentRank,

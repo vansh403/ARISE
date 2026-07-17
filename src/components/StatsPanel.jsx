@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { HUNTER, LEADERBOARD, RANKS } from '../mock';
+import { HUNTER, RANKS } from '../mock';
 import { Flame, Crown, TrendingUp, Activity, Dumbbell, Target } from 'lucide-react';
+import { apiClient } from '../lib/api';
 
 const rankColor = (id) => RANKS.find((r) => r.id === id)?.color || '#22d3ee';
 import { getProgress, getRankByXP, calculateLevel } from '../lib/fitness';
@@ -13,6 +14,20 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
   
   const displayName = currentUser?.name || HUNTER.name;
   const stats = currentUser?.stats;
+
+  const [leaderboard, setLeaderboard] = useState([]);
+
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        const data = await apiClient.getHunters();
+        setLeaderboard(data.slice(0, 4));
+      } catch (e) {
+        console.error('Failed to load leaderboard', e);
+      }
+    };
+    loadLeaderboard();
+  }, []);
 
   // Calculate Protocol if available
   const weight = stats ? parseFloat(stats.weight) : 70;
@@ -132,14 +147,14 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
             <div>
               <div className="text-[10px] font-mono text-slate-500 mb-1">TARGET CALORIES</div>
               <div className="font-display text-2xl font-black text-slate-100 drop-shadow-md">
-                {stats ? maintenance : 2500} <span className="text-sm font-normal text-slate-500">KCAL</span>
+                {stats ? maintenance : 0} <span className="text-sm font-normal text-slate-500">KCAL</span>
               </div>
             </div>
             
             <div className="pt-2">
               <div className="text-[10px] font-mono text-slate-500 mb-1">TRAINING SPLIT</div>
               <div className="font-display text-lg text-cyan-300 leading-tight">
-                {stats ? (stats.daysPerWeek >= 5 ? 'Advanced PPL (6 Days)' : 'Upper/Lower (4 Days)') : 'Full Body (3 Days)'}
+                {stats ? (stats.daysPerWeek >= 5 ? 'Advanced PPL (6 Days)' : 'Upper/Lower (4 Days)') : 'No Split Assigned'}
               </div>
             </div>
           </div>
@@ -151,24 +166,24 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
             <div className="group">
               <div className="flex justify-between mb-1.5">
                 <span className="font-mono text-[10px] text-slate-300 tracking-widest group-hover:text-cyan-300 transition-colors">STRENGTH SCORE</span>
-                <span className="font-mono text-[10px] text-slate-500 group-hover:text-cyan-300 transition-colors">{progress.strength}/100</span>
+                <span className="font-mono text-[10px] text-slate-500 group-hover:text-cyan-300 transition-colors">{progress.strength || 0}/100</span>
               </div>
               <div className="h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-cyan-400" style={{ width: `${Math.min(progress.strength, 100)}%` }} />
+                <div className="h-full bg-cyan-400" style={{ width: `${Math.min(progress.strength || 0, 100)}%` }} />
               </div>
             </div>
             {HUNTER.stats.map((s, i) => {
-              let val = s.value;
+              let val = 0;
               if (s.name === 'Strength') {
                 val = progress.strength || 0;
               } else if (s.name === 'Endurance') {
-                val = Math.min(60 + (progress.completedQuestIds?.length || 0) * 2, 100);
+                val = (progress.completedQuestIds && progress.completedQuestIds.length > 0) ? Math.min(60 + progress.completedQuestIds.length * 2, 100) : 0;
               } else if (s.name === 'Agility') {
-                val = Math.min(50 + (progress.completedQuestIds?.length || 0) * 2, 100);
+                val = (progress.completedQuestIds && progress.completedQuestIds.length > 0) ? Math.min(50 + progress.completedQuestIds.length * 2, 100) : 0;
               } else if (s.name === 'Discipline') {
-                val = Math.min(50 + (progress.streak || 0) * 4, 100);
+                val = (progress.streak && progress.streak > 0) ? Math.min(50 + progress.streak * 4, 100) : 0;
               } else if (s.name === 'Recovery') {
-                val = Math.min(55 + (progress.streak || 0) * 2, 100);
+                val = (progress.streak && progress.streak > 0) ? Math.min(55 + progress.streak * 2, 100) : 0;
               }
               return (
                 <div key={s.name} className="group">
@@ -197,19 +212,23 @@ export default function StatsPanel({ currentUser, progress: propProgress }) {
             <Crown className="w-3.5 h-3.5 text-cyan-400" />
           </div>
           <div className="flex-1 flex flex-col gap-2">
-            {LEADERBOARD.slice(0, 4).map((h) => {
-              const clr = rankColor(h.tier);
-              return (
-                <div key={h.rank} className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${h.self ? 'bg-cyan-500/10 border border-cyan-500/20' : 'hover:bg-white/5 border border-transparent'}`}>
-                  <div className="font-mono text-[10px] text-slate-500 w-4">#{h.rank}</div>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center border bg-black/50 shadow-inner" style={{ borderColor: `${clr}40` }}>
-                    <span className="font-display font-black text-xs" style={{ color: clr }}>{h.tier}</span>
+            {leaderboard.length > 0 ? (
+              leaderboard.map((h) => {
+                const clr = rankColor(h.tier);
+                return (
+                  <div key={h.id} className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${h.isLocal ? 'bg-cyan-500/10 border border-cyan-500/20' : 'hover:bg-white/5 border border-transparent'}`}>
+                    <div className="font-mono text-[10px] text-slate-500 w-4">#{h.rank}</div>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center border bg-black/50 shadow-inner" style={{ borderColor: `${clr}40` }}>
+                      <span className="font-display font-black text-xs" style={{ color: clr }}>{h.tier}</span>
+                    </div>
+                    <div className="flex-1 font-display tracking-widest text-sm text-slate-200 truncate">{h.name}</div>
+                    <div className="font-mono text-[10px] text-cyan-400">LVL {h.level}</div>
                   </div>
-                  <div className="flex-1 font-display tracking-widest text-sm text-slate-200 truncate">{h.name}</div>
-                  <div className="font-mono text-[10px] text-cyan-400">LVL {h.level || 42}</div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-xs font-mono text-slate-600 italic py-4 text-center">// RECONSTRUCTING LEADERBOARD...</div>
+            )}
           </div>
         </motion.div>
 

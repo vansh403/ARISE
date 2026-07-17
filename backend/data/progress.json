@@ -1,7 +1,7 @@
 [
   {
     "userId": "a309d354-bf9e-4faf-821c-30b8a5a98998",
-    "currentRank": "D",
+    "currentRank": "E",
     "xp": 425,
     "level": 3,
     "strength": 36,
@@ -17,13 +17,15 @@
     ],
     "unlockedQuestIds": [
       3
-    ]
+    ],
+    "streak": 0,
+    "lastActiveDate": ""
   },
   {
     "userId": "mock-sub-aravaswal20@gmail.com",
-    "currentRank": "B",
-    "xp": 2088,
-    "level": 7,
+    "currentRank": "D",
+    "xp": 2923,
+    "level": 8,
     "strength": 0,
     "prs": {
       "squat": 0,
@@ -37,10 +39,36 @@
       "body-chest-4",
       "body-chest-5",
       "body-back-1",
-      "body-back-2"
+      "body-back-2",
+      "body-back-3",
+      "nutrition-protein",
+      "nutrition-calories",
+      "nutrition-carbs"
     ],
     "unlockedQuestIds": [
       3
-    ]
+    ],
+    "streak": 1,
+    "lastActiveDate": "2026-07-17"
+  },
+  {
+    "userId": "cf1fc862-c864-461c-b4d2-a93cfa73d735",
+    "currentRank": "E",
+    "xp": 250,
+    "level": 3,
+    "strength": 30,
+    "prs": {
+      "squat": 100,
+      "bench": 80,
+      "deadlift": 120
+    },
+    "completedQuestIds": [
+      "nutrition-protein"
+    ],
+    "unlockedQuestIds": [
+      3
+    ],
+    "streak": 1,
+    "lastActiveDate": "2026-07-17"
   }
 ]

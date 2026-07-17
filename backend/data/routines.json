@@ -246,5 +246,48 @@
     "totalSets": 0,
     "exercises": [],
     "moreCount": 0
+  },
+  {
+    "id": "r-1784238161800",
+    "userId": "cf1fc862-c864-461c-b4d2-a93cfa73d735",
+    "name": "Chest Protocol",
+    "totalSets": 7,
+    "exercises": [
+      {
+        "name": "Push-up Ladder",
+        "sets": 3,
+        "icon": "🤸"
+      },
+      {
+        "name": "Chest Squeeze Holds",
+        "sets": 3,
+        "icon": "💪"
+      },
+      {
+        "name": "Dumbbell Bench Press",
+        "sets": 1,
+        "icon": "🏋️"
+      }
+    ],
+    "moreCount": 0
+  },
+  {
+    "id": "r-1784262063278",
+    "userId": "mock-sub-aravaswal20@gmail.com",
+    "name": "Powerlifting Session",
+    "totalSets": 6,
+    "exercises": [
+      {
+        "name": "Squat",
+        "sets": 3,
+        "icon": "🏋️"
+      },
+      {
+        "name": "Reverse Lunges",
+        "sets": 3,
+        "icon": "🧍"
+      }
+    ],
+    "moreCount": 0
   }
 ]

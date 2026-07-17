@@ -13,24 +13,10 @@ const DEFAULT_ROUTINES = [
 ];
 
 // GET /api/routines
-router.get('/', auth, (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    let routines = db.find('routines', { userId });
-
-    if (routines.length === 0) {
-      // Initialize with default templates
-      routines = DEFAULT_ROUTINES.map(r => {
-        const customRoutine = {
-          ...r,
-          id: `r-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          userId
-        };
-        db.insert('routines', customRoutine);
-        return customRoutine;
-      });
-    }
-
+    const routines = await db.find('routines', { userId });
     return res.json(routines);
   } catch (e) {
     console.error('Fetch routines error:', e);
@@ -39,25 +25,29 @@ router.get('/', auth, (req, res) => {
 });
 
 // POST /api/routines
-router.post('/', auth, (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name } = req.body;
+    const { name, exercises } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Routine name is required.' });
     }
 
+    const parsedExercises = exercises || [];
+    const totalSets = parsedExercises.reduce((sum, ex) => sum + (Number(ex.sets) || 0), 0);
+    const moreCount = Math.max(0, parsedExercises.length - 3);
+
     const newRoutine = {
       id: `r-${Date.now()}`,
       userId,
       name: name.trim(),
-      totalSets: 0,
-      exercises: [],
-      moreCount: 0
+      totalSets,
+      exercises: parsedExercises,
+      moreCount
     };
 
-    db.insert('routines', newRoutine);
+    await db.insert('routines', newRoutine);
     return res.status(201).json(newRoutine);
   } catch (e) {
     console.error('Create routine error:', e);
@@ -65,13 +55,41 @@ router.post('/', auth, (req, res) => {
   }
 });
 
+// PUT /api/routines/:id
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { name, exercises } = req.body;
+
+    const routine = await db.findOne('routines', { id, userId });
+    if (!routine) {
+      return res.status(404).json({ error: 'Routine not found.' });
+    }
+
+    const updates = {};
+    if (name !== undefined) updates.name = name.trim();
+    if (exercises !== undefined) {
+      updates.exercises = exercises;
+      updates.totalSets = exercises.reduce((sum, ex) => sum + (Number(ex.sets) || 0), 0);
+      updates.moreCount = Math.max(0, exercises.length - 3);
+    }
+
+    await db.update('routines', { id, userId }, updates);
+    return res.json({ ...routine, ...updates });
+  } catch (e) {
+    console.error('Update routine error:', e);
+    return res.status(500).json({ error: 'Failed to update routine.' });
+  }
+});
+
 // DELETE /api/routines/:id
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const count = db.delete('routines', { id, userId });
+    const count = await db.delete('routines', { id, userId });
     if (count === 0) {
       return res.status(404).json({ error: 'Routine not found or access denied.' });
     }

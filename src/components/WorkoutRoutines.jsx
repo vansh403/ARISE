@@ -18,6 +18,90 @@ const DEFAULT_ROUTINES = [
   { id: 'r5', name: 'Bicep/tricep', totalSets: 33, exercises: [{ name: 'Dumbbell Curl', sets: 3, icon: '💪' }, { name: 'Hammer Curl', sets: 3, icon: '🔨' }, { name: 'Seated Dumbbell Tricep Extension', sets: 3, icon: '🪑' }], moreCount: 8 }
 ];
 
+const PRE_WRITTEN_PLANS = {
+  shoulder: [
+    {
+      name: 'Shoulder Press Protocol',
+      exercises: [
+        { name: 'Seated Dumbbell Shoulder Press', sets: 3, icon: '🏋️' },
+        { name: 'Seated Shoulder Press', sets: 3, icon: '🪑' }
+      ]
+    },
+    {
+      name: 'Lateral Raise Circuit',
+      exercises: [
+        { name: 'Lateral Raise Pulses', sets: 3, icon: '💪' },
+        { name: 'Shoulder Taps', sets: 3, icon: '🤸' }
+      ]
+    }
+  ],
+  chest: [
+    {
+      name: 'Bench Press Focus',
+      exercises: [
+        { name: 'Bench Press', sets: 3, icon: '🏋️' },
+        { name: 'Incline Dumbbell Bench Press', sets: 3, icon: '🪑' }
+      ]
+    },
+    {
+      name: 'Chest Destroyer',
+      exercises: [
+        { name: 'Push-up Ladder', sets: 3, icon: '🤸' },
+        { name: 'Chest Squeeze Holds', sets: 3, icon: '💪' }
+      ]
+    }
+  ],
+  back: [
+    {
+      name: 'Lat Pulldown Special',
+      exercises: [
+        { name: 'Lat Pulldown', sets: 3, icon: '🪑' },
+        { name: 'Bent Over Dumbbell Row', sets: 3, icon: '💪' }
+      ]
+    },
+    {
+      name: 'Row Matrix',
+      exercises: [
+        { name: 'Backpack Rows', sets: 3, icon: '🎒' },
+        { name: 'Superman Pulls', sets: 3, icon: '🤸' }
+      ]
+    }
+  ],
+  legs: [
+    {
+      name: 'Squat Session',
+      exercises: [
+        { name: 'Squat', sets: 3, icon: '🏋️' },
+        { name: 'Reverse Lunges', sets: 3, icon: '🧍' }
+      ]
+    },
+    {
+      name: 'Leg Press Protocol',
+      exercises: [
+        { name: 'Sled Leg Press', sets: 3, icon: '📐' },
+        { name: 'Leg Extension', sets: 3, icon: '🪑' }
+      ]
+    }
+  ],
+  'bicep/tricep': [
+    {
+      name: 'Arms Pump',
+      exercises: [
+        { name: 'Dumbbell Curl', sets: 3, icon: '💪' },
+        { name: 'Hammer Curl', sets: 3, icon: '🔨' },
+        { name: 'Seated Dumbbell Tricep Extension', sets: 3, icon: '🪑' }
+      ]
+    },
+    {
+      name: 'Close-Grip Push-up Circuit',
+      exercises: [
+        { name: 'Close-grip push-ups', sets: 3, icon: '🤸' },
+        { name: 'Curl Ladder', sets: 3, icon: '💪' }
+      ]
+    }
+  ]
+};
+
 export default function WorkoutRoutines({ currentUser, progressive = true, progress = null, onRefreshProgress = null }) {
   const { toast } = useToast();
   
@@ -25,11 +109,12 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
     return new Set(progress?.completedQuestIds || []);
   }, [progress]);
 
-  const [routines, setRoutines] = useState(DEFAULT_ROUTINES);
+  const [routines, setRoutines] = useState([]);
   const [routinesOpen, setRoutinesOpen] = useState(true);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [isRoutineBuilderOpen, setIsRoutineBuilderOpen] = useState(false);
+  const [builderStep, setBuilderStep] = useState(1);
   const [newRoutineName, setNewRoutineName] = useState('');
 
   const fetchRoutines = async () => {
@@ -48,12 +133,15 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
   }, [currentUser]);
 
   // Dynamic Today's Workout based on Day of Week
-  const [todaysWorkout, setTodaysWorkout] = useState(DEFAULT_ROUTINES[0]);
+  const [todaysWorkout, setTodaysWorkout] = useState(null);
   useEffect(() => {
-    if (routines.length === 0) return;
+    if (routines.length === 0) {
+      setTodaysWorkout(null);
+      return;
+    }
     const day = new Date().getDay(); // 0 is Sunday, 1 is Monday
     const index = day % routines.length;
-    setTodaysWorkout(routines[index] || DEFAULT_ROUTINES[0]);
+    setTodaysWorkout(routines[index] || null);
   }, [routines]);
 
   // Take the first 8 body quests for the scroll view
@@ -80,12 +168,18 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
       toast({ title: 'Invalid Name', description: 'Please enter a routine name.' });
       return;
     }
+    setBuilderStep(2);
+  };
+
+  const handleCreateWithPlan = async (exercises) => {
     try {
-      const newRoutine = await apiClient.createRoutine(newRoutineName);
+      const newRoutine = await apiClient.createRoutine(newRoutineName, exercises);
       setRoutines(prev => [newRoutine, ...prev]);
       setNewRoutineName('');
       setIsRoutineBuilderOpen(false);
-      toast({ title: '[SYSTEM]', description: `Created new routine: ${newRoutineName}` });
+      setBuilderStep(1);
+      toast({ title: '[SYSTEM]', description: `Created new routine: ${newRoutine.name}` });
+      setActiveWorkout(newRoutine);
     } catch (e) {
       toast({ title: 'Error creating routine' });
     }
@@ -158,23 +252,39 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
             <div className="w-5 h-5 rounded-full border border-slate-700 text-slate-400 flex items-center justify-center text-xs font-mono">?</div>
           </div>
           
-          <button 
-            onClick={() => setActiveWorkout(todaysWorkout)}
-            className="w-full bg-green-700/80 hover:bg-green-600 transition-colors border border-green-500/50 rounded-2xl p-4 flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-black/30 rounded-xl flex items-center justify-center text-3xl">
-                🏋️
+          {todaysWorkout ? (
+            <button 
+              onClick={() => setActiveWorkout(todaysWorkout)}
+              className="w-full bg-green-700/80 hover:bg-green-600 transition-colors border border-green-500/50 rounded-2xl p-4 flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-black/30 rounded-xl flex items-center justify-center text-3xl">
+                  🏋️
+                </div>
+                <div className="text-left">
+                  <div className="font-display font-bold text-xl text-white">{todaysWorkout.name}</div>
+                  <div className="font-mono text-sm text-green-200/70">{todaysWorkout.totalSets} Sets • 1h</div>
+                </div>
               </div>
-              <div className="text-left">
-                <div className="font-display font-bold text-xl text-white">{todaysWorkout.name}</div>
-                <div className="font-mono text-sm text-green-200/70">{todaysWorkout.totalSets} Sets • 1h</div>
+              <div className="flex items-center gap-2 font-display font-bold text-white text-lg mr-2">
+                Start <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
               </div>
+            </button>
+          ) : (
+            <div className="w-full bg-slate-950/40 border border-slate-800 rounded-2xl p-6 text-center">
+              <div className="text-slate-500 font-mono text-xs mb-2">// NO TRAINING SYSTEM DETECTED</div>
+              <p className="text-slate-400 text-sm mb-4">You have not registered any routines in your protocol.</p>
+              <button 
+                onClick={() => {
+                  setBuilderStep(1);
+                  setIsRoutineBuilderOpen(true);
+                }}
+                className="bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors"
+              >
+                Create First Routine
+              </button>
             </div>
-            <div className="flex items-center gap-2 font-display font-bold text-white text-lg mr-2">
-              Start <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-            </div>
-          </button>
+          )}
         </div>
 
         {/* New Workout */}
@@ -187,14 +297,6 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
             >
               <span className="font-display text-xl text-slate-200 group-hover:text-cyan-300 transition-colors">Start Empty Workout</span>
               <Dumbbell className="w-10 h-10 text-cyan-500 transform -rotate-45 group-hover:scale-110 transition-transform" />
-            </button>
-
-            <button 
-              onClick={() => setIsGeneratorOpen(true)}
-              className="w-full bg-[#1c1c24] border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 flex items-center justify-between group transition-colors"
-            >
-              <span className="font-display text-xl text-slate-200 group-hover:text-cyan-300 transition-colors">Generate Workout</span>
-              <ClipboardList className="w-10 h-10 text-blue-400 group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
@@ -293,28 +395,66 @@ export default function WorkoutRoutines({ currentUser, progressive = true, progr
             <div className="bg-[#1c1c24] border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden">
               <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#23232d]">
                 <h3 className="font-display font-bold text-lg text-white">Create Routine</h3>
-                <button onClick={() => setIsRoutineBuilderOpen(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5"/></button>
+                <button onClick={() => { setIsRoutineBuilderOpen(false); setBuilderStep(1); }} className="text-slate-400 hover:text-white"><X className="w-5 h-5"/></button>
               </div>
-              <div className="p-6">
-                <label className="font-mono text-xs text-slate-400 uppercase tracking-widest mb-2 block">Routine Name</label>
-                <input 
-                  type="text" 
-                  value={newRoutineName}
-                  onChange={(e) => setNewRoutineName(e.target.value)}
-                  placeholder="e.g. Heavy Legs"
-                  autoFocus
-                  className="w-full bg-[#0f0f13] border border-slate-700 rounded-lg h-12 px-4 text-white font-display focus:border-cyan-500 focus:outline-none mb-6"
-                />
-                
-                <div className="flex gap-4">
-                  <button onClick={() => setIsRoutineBuilderOpen(false)} className="flex-1 py-3 font-display font-bold text-slate-400 hover:text-white transition-colors">
-                    Cancel
-                  </button>
-                  <button onClick={handleCreateRoutine} className="flex-1 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold rounded-lg transition-colors">
-                    Create
-                  </button>
+              
+              {builderStep === 1 && (
+                <div className="p-6">
+                  <label className="font-mono text-xs text-slate-400 uppercase tracking-widest mb-2 block">Routine Name</label>
+                  <input 
+                    type="text" 
+                    value={newRoutineName}
+                    onChange={(e) => setNewRoutineName(e.target.value)}
+                    placeholder="e.g. Heavy Legs"
+                    autoFocus
+                    className="w-full bg-[#0f0f13] border border-slate-700 rounded-lg h-12 px-4 text-white font-display focus:border-cyan-500 focus:outline-none mb-6"
+                  />
+                  
+                  <div className="flex gap-4">
+                    <button onClick={() => setIsRoutineBuilderOpen(false)} className="flex-1 py-3 font-display font-bold text-slate-400 hover:text-white transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={handleCreateRoutine} className="flex-1 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold rounded-lg transition-colors">
+                      Next
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {builderStep === 2 && (
+                <div className="p-6 overflow-y-auto max-h-[70vh]">
+                  <div className="font-mono text-xs text-cyan-300 tracking-[0.2em] mb-4">// SELECT WORKOUT PLAN</div>
+                  <p className="text-slate-400 text-sm mb-6 font-display">Select a pre-written training plan or start empty.</p>
+                  
+                  <div className="space-y-6">
+                    {Object.entries(PRE_WRITTEN_PLANS).map(([muscle, plans]) => (
+                      <div key={muscle} className="border-b border-slate-800 pb-4">
+                        <span className="font-mono text-[10px] text-cyan-400 uppercase tracking-widest block mb-2">{muscle.toUpperCase()}</span>
+                        <div className="flex flex-wrap gap-2">
+                          {plans.map((p) => (
+                            <button
+                              key={p.name}
+                              onClick={() => handleCreateWithPlan(p.exercises)}
+                              className="bg-[#0f0f13] border border-slate-800 hover:border-cyan-500/50 hover:bg-[#16161f] text-slate-300 hover:text-cyan-300 px-3 py-2 text-xs font-mono transition-all"
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleCreateWithPlan([])}
+                        className="w-full h-12 bg-slate-900 border border-slate-800 hover:border-cyan-500 text-slate-200 hover:text-cyan-300 font-mono text-xs uppercase tracking-widest transition-all"
+                      >
+                        Start Custom Empty Plan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

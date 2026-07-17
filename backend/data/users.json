@@ -46,5 +46,21 @@
       "daysPerWeek": 4,
       "experience": "Beginner"
     }
+  },
+  {
+    "id": "cf1fc862-c864-461c-b4d2-a93cfa73d735",
+    "name": "Test Hunter",
+    "email": "verificationtest@gmail.com",
+    "passwordHash": "$2a$10$3AJtA1TJ.M9/sA57g/7C3uENgwwtDtpURN4vtiaeurxrE6m75r3YK",
+    "provider": "manual",
+    "joinedAt": "2026-07-16T21:38:32.607Z",
+    "stats": {
+      "gender": "male",
+      "dob": "1995-05-15",
+      "height": 180,
+      "weight": 80,
+      "daysPerWeek": 4,
+      "experience": "Intermediate"
+    }
   }
 ]

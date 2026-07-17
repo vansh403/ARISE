@@ -13,16 +13,16 @@ const MOCK_LEADERBOARD = [
 ];
 
 // GET /api/hunters
-router.get('/', auth, (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const currentUserId = req.user.id;
     
     // 1. Fetch all live registered users
-    const allUsers = db.find('users');
+    const allUsers = await db.find('users');
     
     // 2. Fetch progress for all users to construct live database hunters
-    const liveHunters = allUsers.map((user) => {
-      const progress = db.findOne('progress', { userId: user.id }) || {
+    const liveHunters = await Promise.all(allUsers.map(async (user) => {
+      const progress = (await db.findOne('progress', { userId: user.id })) || {
         xp: 0,
         level: 1,
         currentRank: 'E'
@@ -37,7 +37,7 @@ router.get('/', auth, (req, res) => {
         status: user.id === currentUserId ? 'Online' : (progress.xp > 500 ? 'In Dungeon' : 'Online'),
         isLocal: user.id === currentUserId
       };
-    });
+    }));
 
     // 3. Map mock hunters
     const mockHunters = MOCK_LEADERBOARD.map((h, i) => ({

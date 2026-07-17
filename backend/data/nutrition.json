@@ -1,0 +1,83 @@
+[
+  {
+    "id": "diary-1784238310339-uhm3e",
+    "userId": "cf1fc862-c864-461c-b4d2-a93cfa73d735",
+    "date": "2026-07-17",
+    "breakfast": [
+      {
+        "id": "fdc-2038064",
+        "name": "CHICKEN",
+        "amount": "56g",
+        "calories": 107,
+        "protein": 21,
+        "carbs": 0,
+        "logId": "food-1784238345266-l4r7a"
+      }
+    ],
+    "lunch": [],
+    "dinner": [],
+    "snacks": [],
+    "exercise": 0,
+    "water": 0
+  },
+  {
+    "id": "diary-1784262279655-m3qo7",
+    "userId": "mock-sub-aravaswal20@gmail.com",
+    "date": "2026-07-17",
+    "breakfast": [
+      {
+        "id": "f1",
+        "name": "Chicken Breast (Grilled)",
+        "amount": "100g",
+        "calories": 165,
+        "protein": 31,
+        "carbs": 0,
+        "logId": "food-1784262982623-5tqqe"
+      },
+      {
+        "id": "f4",
+        "name": "Oatmeal",
+        "amount": "1 cup cooked",
+        "calories": 158,
+        "protein": 6,
+        "carbs": 27,
+        "logId": "food-1784263002548-xttkm"
+      }
+    ],
+    "lunch": [
+      {
+        "id": "fdc-2708745",
+        "name": "Chicken cornbread",
+        "amount": "100g",
+        "calories": 167,
+        "protein": 14,
+        "carbs": 9,
+        "logId": "food-1784263055194-toq8k"
+      }
+    ],
+    "dinner": [
+      {
+        "id": "f2",
+        "name": "White Rice (Cooked)",
+        "amount": "1 cup",
+        "calories": 205,
+        "protein": 4,
+        "carbs": 45,
+        "logId": "food-1784263669106-mrj26"
+      }
+    ],
+    "snacks": [
+      {
+        "id": "fdc-172673",
+        "name": "Bread, egg",
+        "amount": "100g",
+        "calories": 1200,
+        "protein": 10,
+        "carbs": 48,
+        "logId": "food-1784263656104-ev22l"
+      }
+    ],
+    "exercise": 1800,
+    "water": 1000
+  }
+]

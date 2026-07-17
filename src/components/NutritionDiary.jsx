@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, MoreHorizontal, BookMarked, PieChart, Check, Zap, Flame, Droplets, Search, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
 import { buildNutritionTargets, buildNutritionQuests } from './QuestBoard';
 import { RANKS } from '../mock';
+import { apiClient } from '../lib/api';
 
 const rankColor = (id) => RANKS.find((r) => r.id === id)?.color || '#22d3ee';
 
@@ -60,6 +61,39 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
 
   const [activeModalMeal, setActiveModalMeal] = useState(null); // 'breakfast', 'lunch', etc.
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+
+  const totalProtein = useMemo(() => {
+    const calc = (meal) => (foodLog[meal] || []).reduce((acc, food) => acc + (food.protein || 0), 0);
+    return calc('breakfast') + calc('lunch') + calc('dinner') + calc('snacks');
+  }, [foodLog]);
+
+  const totalCarbs = useMemo(() => {
+    const calc = (meal) => (foodLog[meal] || []).reduce((acc, food) => acc + (food.carbs || 0), 0);
+    return calc('breakfast') + calc('lunch') + calc('dinner') + calc('snacks');
+  }, [foodLog]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const data = await apiClient.searchFood(searchQuery);
+        setSearchResults(data);
+      } catch (e) {
+        console.error('Failed to search food', e);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   const calcMealCalories = (mealArray) => mealArray.reduce((acc, food) => acc + food.calories, 0);
 
@@ -97,7 +131,6 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
   };
 
   const addSpecificFood = async (food) => {
-    if (!activeModalMeal) return;
     try {
       const updatedDiary = await apiClient.addFood(null, activeModalMeal, food);
       setFoodLog(updatedDiary);
@@ -105,6 +138,114 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
       setActiveModalMeal(null);
     } catch (e) {
       toast({ title: '[SYSTEM ERROR]', description: 'Failed to log food.' });
+    }
+  };
+
+  const handleCompleteDiary = async () => {
+    try {
+      await apiClient.completeQuest('nutrition-calories', 150);
+      toast({
+        title: '[DIARY COMPLETED]',
+        description: 'Daily nutritional log saved. Earned +150 XP!'
+      });
+      setShowCompleteModal(true);
+      if (onRefreshProgress) {
+        onRefreshProgress();
+      }
+    } catch (e) {
+      toast({
+        title: '[SYSTEM ERROR]',
+        description: 'Failed to complete diary.'
+      });
+    }
+  };
+
+  const downloadPDFReport = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      // Brand Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(34, 211, 238); // Cyan
+      doc.text("ARISE PROTOCOL - DAILY NUTRITION REPORT", 14, 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 27);
+      doc.text(`Hunter Profile: ${currentUser?.name || 'Verified Hunter'}`, 14, 32);
+
+      // Separator Line
+      doc.setDrawColor(203, 213, 225);
+      doc.line(14, 37, 196, 37);
+
+      // Summary Section
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Daily Protocol Summary:", 14, 46);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(`• Total Energy Intake: ${totalFood} kcal / ${targets.calories} kcal`, 16, 54);
+      doc.text(`• Total Protein Intake: ${totalProtein}g / ${targets.protein}g`, 16, 61);
+      doc.text(`• Total Carbohydrates: ${totalCarbs}g / ${targets.carbs}g`, 16, 68);
+      doc.text(`• Total Hydration: ${foodLog.water}ml / ${targets.water * 1000}ml`, 16, 75);
+
+      doc.line(14, 82, 196, 82);
+
+      // Meal Breakdown
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Registered Food Logs:", 14, 91);
+
+      let y = 100;
+      const meals = ['breakfast', 'lunch', 'dinner', 'snacks'];
+      meals.forEach(meal => {
+        const items = foodLog[meal] || [];
+        if (items.length > 0) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${meal.toUpperCase()}:`, 14, y);
+          y += 6;
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(71, 85, 105);
+          items.forEach(item => {
+            doc.text(`- ${item.name} (${item.amount}): ${item.calories} kcal | P: ${item.protein || 0}g | C: ${item.carbs || 0}g`, 18, y);
+            y += 6;
+            if (y > 280) {
+              doc.addPage();
+              y = 20;
+            }
+          });
+          y += 4;
+        }
+      });
+
+      if (y < 250) {
+        y = 250;
+      } else {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setDrawColor(203, 213, 225);
+      doc.line(14, y, 196, y);
+      y += 10;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text("// PROTOCOL FINALIZED. SYSTEM SYNCHRONIZATION COMPLETE.", 14, y);
+
+      doc.save(`arise-nutrition-report-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('Failed to download PDF:', err);
+      toast({ title: '[ERROR]', description: 'Failed to generate PDF document.' });
     }
   };
 
@@ -124,10 +265,7 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
     }
   };
 
-  const filteredFoods = useMemo(() => {
-    if (!searchQuery) return MOCK_FOOD_DB;
-    return MOCK_FOOD_DB.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [searchQuery]);
+  const displayFoods = searchQuery ? searchResults : MOCK_FOOD_DB;
 
   const SectionHeader = ({ title, value }) => (
     <div className="flex justify-between items-center py-3 px-4 border-b border-slate-800">
@@ -276,15 +414,6 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
           {/* Exercise */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-lg overflow-hidden backdrop-blur-md">
             <SectionHeader title="Exercise" value={foodLog.exercise} />
-            <div className="py-4 px-4 flex items-center gap-3 border-b border-slate-800/50">
-              <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                <Flame size={20} />
-              </div>
-              <div>
-                <div className="text-sm font-display text-slate-200">Connect a step tracker</div>
-                <div className="text-xs text-slate-500 font-mono">Automatically track steps and calories burned</div>
-              </div>
-            </div>
             <AddAction label="Exercise" onClick={handleAddExercise} />
           </div>
 
@@ -306,16 +435,20 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-8 flex gap-4">
-          <Button variant="outline" className="flex-1 bg-slate-900 border-slate-700 hover:bg-slate-800 h-14 rounded-none">
-            <PieChart className="w-4 h-4 mr-2" /> Nutrition
-          </Button>
-          <Button variant="outline" className="flex-1 bg-slate-900 border-slate-700 hover:bg-slate-800 h-14 rounded-none">
-            <BookMarked className="w-4 h-4 mr-2" /> Notes
+        <div className="mt-8">
+          <Button 
+            onClick={() => setShowNutritionModal(true)}
+            variant="outline" 
+            className="w-full bg-slate-900 border-slate-700 hover:bg-slate-800 h-14 rounded-none"
+          >
+            <PieChart className="w-4 h-4 mr-2" /> Nutrition Summary
           </Button>
         </div>
 
-        <Button className="w-full mt-4 h-14 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold tracking-widest text-lg rounded-none transition-all">
+        <Button 
+          onClick={handleCompleteDiary}
+          className="w-full mt-4 h-14 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold tracking-widest text-lg rounded-none transition-all"
+        >
           <BookMarked className="w-5 h-5 mr-2" />
           COMPLETE DIARY
         </Button>
@@ -356,8 +489,10 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
               <div className="font-mono text-[10px] text-cyan-400 tracking-widest uppercase mb-4 mt-2">// SYSTEM DATABASE</div>
               
               <div className="space-y-2">
-                {filteredFoods.length > 0 ? (
-                  filteredFoods.map(food => (
+                {searching ? (
+                  <div className="text-center py-12 text-slate-500 font-mono text-sm animate-pulse">// RETRIEVING USDA DATA...</div>
+                ) : displayFoods.length > 0 ? (
+                  displayFoods.map(food => (
                     <div 
                       key={food.id} 
                       onClick={() => addSpecificFood(food)}
@@ -381,6 +516,129 @@ export default function NutritionDiary({ currentUser, progressive = false, progr
                     <div className="font-mono text-xs text-slate-600">Try searching for chicken, rice, eggs, etc.</div>
                   </div>
                 )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNutritionModal && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <div className="bg-[#1c1c24] border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden text-slate-200">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#23232d]">
+                <h3 className="font-display font-bold text-lg text-white">Daily Nutrient Analysis</h3>
+                <button onClick={() => setShowNutritionModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5"/>
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                {/* Calories */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-display text-slate-300">Calories</span>
+                    <span className="font-mono text-sm">{totalFood} / {targets.calories} kcal</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      className="h-full bg-cyan-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min((totalFood / targets.calories) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Protein */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-display text-slate-300">Protein</span>
+                    <span className="font-mono text-sm">{totalProtein}g / {targets.protein}g</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      className="h-full bg-green-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min((totalProtein / targets.protein) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Carbohydrates */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-display text-slate-300">Carbohydrates</span>
+                    <span className="font-mono text-sm">{totalCarbs}g / {targets.carbs}g</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      className="h-full bg-yellow-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min((totalCarbs / targets.carbs) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Water */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-display text-slate-300">Water</span>
+                    <span className="font-mono text-sm">{foodLog.water}ml / {targets.water * 1000}ml</span>
+                  </div>
+                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min((foodLog.water / (targets.water * 1000)) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-[#23232d] border-t border-slate-800 flex justify-end">
+                <button 
+                  onClick={() => setShowNutritionModal(false)}
+                  className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold text-sm rounded-lg transition-colors"
+                >
+                  Close Analysis
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCompleteModal && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <div className="bg-[#1c1c24] border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden text-slate-200 animate-fade-in">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#23232d]">
+                <h3 className="font-display font-bold text-lg text-white">Protocol Finalized</h3>
+                <button onClick={() => setShowCompleteModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5"/></button>
+              </div>
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-cyan-500/10 text-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                  🏆
+                </div>
+                <h4 className="font-display font-bold text-xl text-white mb-2">DIARY PROTOCOL CLEARED</h4>
+                <p className="text-slate-400 text-sm mb-6">Your daily food and calorie logs have been successfully synced to the system.</p>
+                
+                <button 
+                  onClick={downloadPDFReport}
+                  className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-display font-bold rounded-lg transition-colors flex items-center justify-center gap-2 mb-3 shadow-lg shadow-cyan-500/20"
+                >
+                  Download Nutrient PDF
+                </button>
+                <button 
+                  onClick={() => setShowCompleteModal(false)}
+                  className="w-full py-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 font-display font-bold rounded-lg transition-colors"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </motion.div>

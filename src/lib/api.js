@@ -80,8 +80,13 @@ export const apiClient = {
     return res.data;
   },
 
-  async createRoutine(name) {
-    const res = await api.post('/routines', { name });
+  async createRoutine(name, exercises = []) {
+    const res = await api.post('/routines', { name, exercises });
+    return res.data;
+  },
+
+  async updateRoutine(id, routineData) {
+    const res = await api.put(`/routines/${id}`, routineData);
     return res.data;
   },
 
@@ -93,6 +98,11 @@ export const apiClient = {
   // Nutrition diary
   async getNutrition(date) {
     const res = await api.get('/nutrition', { params: { date } });
+    return res.data;
+  },
+
+  async searchFood(query) {
+    const res = await api.get('/nutrition/search', { params: { query } });
     return res.data;
   },
 
@@ -125,6 +135,11 @@ export const apiClient = {
 
   async saveFitnessProfile(profile) {
     const res = await api.post('/fitness/profile', profile);
+    return res.data;
+  },
+
+  async searchExercises(name, muscle) {
+    const res = await api.get('/fitness/exercises', { params: { name, muscle } });
     return res.data;
   },
 

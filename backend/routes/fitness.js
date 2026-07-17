@@ -1,14 +1,61 @@
 import express from 'express';
+import https from 'https';
 import { db } from '../lib/data-store.js';
 import { auth } from '../middleware/auth.js';
 
+const fetchJson = (url, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const headers = options.headers || {};
+    https.get(url, { headers }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(new Error(`Status Code: ${res.statusCode}`));
+      }
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', (err) => { reject(err); });
+  });
+};
+
 const router = express.Router();
 
+// GET /api/fitness/exercises
+router.get('/exercises', auth, async (req, res) => {
+  try {
+    const { name, muscle } = req.query;
+    const apiKey = process.env.WORKOUT_API_KEY || 'D9CeQR9JdA3SKkkxz2WdK2MW8OvEjxB5OYNx9ywz';
+    
+    let url = 'https://api.api-ninjas.com/v1/exercises?';
+    if (name) {
+      url += `name=${encodeURIComponent(name)}&`;
+    }
+    if (muscle) {
+      url += `muscle=${encodeURIComponent(muscle)}&`;
+    }
+    
+    const data = await fetchJson(url, {
+      headers: {
+        'X-Api-Key': apiKey
+      }
+    });
+    return res.json(data);
+  } catch (e) {
+    console.error('API Ninjas exercise fetch error:', e);
+    return res.json([]);
+  }
+});
+
 // GET /api/fitness/profile
-router.get('/profile', auth, (req, res) => {
+router.get('/profile', auth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const profile = db.findOne('fitness_profile', { userId });
+    const profile = await db.findOne('fitness_profile', { userId });
     
     if (!profile) {
       return res.status(404).json({ error: 'Fitness profile not initialized.' });
@@ -22,12 +69,12 @@ router.get('/profile', auth, (req, res) => {
 });
 
 // POST /api/fitness/profile
-router.post('/profile', auth, (req, res) => {
+router.post('/profile', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const profileData = req.body;
 
-    const existingProfile = db.findOne('fitness_profile', { userId });
+    const existingProfile = await db.findOne('fitness_profile', { userId });
     
     const newProfile = {
       ...profileData,
@@ -36,9 +83,9 @@ router.post('/profile', auth, (req, res) => {
     };
 
     if (existingProfile) {
-      db.update('fitness_profile', { userId }, newProfile);
+      await db.update('fitness_profile', { userId }, newProfile);
     } else {
-      db.insert('fitness_profile', newProfile);
+      await db.insert('fitness_profile', newProfile);
     }
 
     return res.json(newProfile);
@@ -49,7 +96,7 @@ router.post('/profile', auth, (req, res) => {
 });
 
 // POST /api/fitness/profile/workouts
-router.post('/profile/workouts', auth, (req, res) => {
+router.post('/profile/workouts', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, detail } = req.body;
@@ -58,7 +105,7 @@ router.post('/profile/workouts', auth, (req, res) => {
       return res.status(400).json({ error: 'Workout name is required.' });
     }
 
-    const profile = db.findOne('fitness_profile', { userId });
+    const profile = await db.findOne('fitness_profile', { userId });
     if (!profile) {
       return res.status(404).json({ error: 'Fitness profile not found.' });
     }
@@ -71,7 +118,7 @@ router.post('/profile/workouts', auth, (req, res) => {
     };
 
     customWorkouts.push(newWorkout);
-    db.update('fitness_profile', { userId }, { customWorkouts });
+    await db.update('fitness_profile', { userId }, { customWorkouts });
 
     return res.json(newWorkout);
   } catch (e) {
@@ -81,18 +128,18 @@ router.post('/profile/workouts', auth, (req, res) => {
 });
 
 // DELETE /api/fitness/profile/workouts/:id
-router.delete('/profile/workouts/:id', auth, (req, res) => {
+router.delete('/profile/workouts/:id', auth, async (req, res) => {
   try {
     const userId = req.user.id;
     const workoutId = Number(req.params.id);
 
-    const profile = db.findOne('fitness_profile', { userId });
+    const profile = await db.findOne('fitness_profile', { userId });
     if (!profile) {
       return res.status(404).json({ error: 'Fitness profile not found.' });
     }
 
     const customWorkouts = (profile.customWorkouts || []).filter(w => w.id !== workoutId);
-    db.update('fitness_profile', { userId }, { customWorkouts });
+    await db.update('fitness_profile', { userId }, { customWorkouts });
 
     return res.json({ message: 'Custom workout deleted successfully.' });
   } catch (e) {
