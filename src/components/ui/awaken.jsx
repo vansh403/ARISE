@@ -104,9 +104,10 @@ export default function Awaken() {
         });
         navigate('/onboarding', { state: { profile: result.user } });
       } catch (e) {
+        const detail = e.response?.data?.error || e.message || 'Unknown authentication error.';
         toast({
           title: '[SYSTEM]',
-          description: `Failed to authenticate Google account: ${e.response?.data?.error || e.message}`,
+          description: `Failed to authenticate Google account: ${detail}`,
         });
       }
     },

@@ -135,7 +135,8 @@ class DataStore {
     await this._ensureConnected();
     if (isMongoConnected) {
       try {
-        const result = await mongoDb.collection(table).updateMany(query, { $set: updates });
+        const { _id, ...cleanUpdates } = updates;
+        const result = await mongoDb.collection(table).updateMany(query, { $set: cleanUpdates });
         return result.modifiedCount;
       } catch (err) {
         console.error(`MongoDB update error on table "${table}":`, err);
