@@ -106,7 +106,7 @@ export default function Awaken() {
       } catch (e) {
         toast({
           title: '[SYSTEM]',
-          description: 'Failed to authenticate Google account.',
+          description: `Failed to authenticate Google account: ${e.response?.data?.error || e.message}`,
         });
       }
     },
