@@ -47,9 +47,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong inside the system.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`========================================`);
-  console.log(`   ARISE Ranked Gym Protocol Backend`);
-  console.log(`   Running on http://localhost:${PORT}`);
-  console.log(`========================================`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`========================================`);
+    console.log(`   ARISE Ranked Gym Protocol Backend`);
+    console.log(`   Running on http://localhost:${PORT}`);
+    console.log(`========================================`);
+  });
+}
+
+export default app;
