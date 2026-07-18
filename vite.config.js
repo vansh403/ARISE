@@ -11,6 +11,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    headers: {
+      "Cross-Origin-Resource-Policy": "same-origin",
+    },
     proxy: {
       "/api": {
         target: "http://localhost:5000",

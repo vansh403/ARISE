@@ -16,6 +16,14 @@ const emptyForm = {
 
 const isGmailAddress = (email) => /^[^\s@]+@gmail\.com$/i.test(email.trim());
 
+const formatError = (err) => {
+  if (!err) return '';
+  if (typeof err === 'object') {
+    return err.message || JSON.stringify(err);
+  }
+  return String(err);
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,7 +67,7 @@ export default function Login() {
       });
       navigate('/dashboard');
     } catch (e) {
-      const errMsg = e.response?.data?.error || 'Failed to authenticate.';
+      const errMsg = formatError(e.response?.data?.error) || 'Failed to authenticate.';
       toast({
         title: '[ACCESS DENIED]',
         description: errMsg,
@@ -92,7 +100,7 @@ export default function Login() {
         });
         navigate('/dashboard');
       } catch (e) {
-        const detail = e.response?.data?.error || e.message || 'Unknown authentication error.';
+        const detail = formatError(e.response?.data?.error) || e.message || 'Unknown authentication error.';
         toast({
           title: '[SYSTEM]',
           description: `Failed to authenticate Google account: ${detail}`,
